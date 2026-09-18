@@ -1,0 +1,6 @@
+# Generato da protocol/tool/generate_vectors.py: non modificare a mano.
+# crc input=<hex> expected=<hex>
+crc input=313233343536373839 expected=29b1
+crc input=- expected=ffff
+crc input=00 expected=e1f0
+crc input=01010000 expected=c544

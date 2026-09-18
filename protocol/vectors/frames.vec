@@ -1,0 +1,9 @@
+# Generato da protocol/tool/generate_vectors.py: non modificare a mano.
+# frame name bytes result [type seq payload]
+frame name=get_state bytes=01010700d35c result=ok type=01 seq=07 payload=-
+frame name=set_params bytes=01022a0700000000d7000195ad result=ok type=02 seq=2a payload=00000000d70001
+frame name=payload_bit_flip bytes=01022a0700010000d7000195ad result=bad_crc
+frame name=version_bit_flip bytes=02010700d35c result=bad_crc
+frame name=future_version bytes=02010100a96d result=unsupported_version
+frame name=truncated bytes=01022a0700000000d700 result=bad_length
+frame name=too_short bytes=01010000 result=too_short

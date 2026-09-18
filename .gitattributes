@@ -1,0 +1,3 @@
+# I vettori sono byte di prova letti da C e da Dart su sistemi diversi:
+# stessi byte ovunque, anche nei fine riga.
+*.vec text eol=lf

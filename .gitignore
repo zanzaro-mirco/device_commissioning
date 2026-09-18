@@ -1,0 +1,27 @@
+# Dart e Flutter
+.dart_tool/
+build/
+coverage/
+# I pacchetti non versionano il lock, come ogni pacchetto; l'app sì, perché è
+# un'applicazione e deve compilare domani con le stesse versioni di oggi.
+packages/**/pubspec.lock
+
+# C
+native/**/out/
+
+# ESP-IDF
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+
+# Android
+local.properties
+.gradle/
+.cxx/
+
+# IDE e sistema
+.idea/
+*.iml
+.vscode/
+.DS_Store

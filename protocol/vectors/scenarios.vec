@@ -1,0 +1,107 @@
+# Scenari della centralina, scritti a mano. Li eseguono due implementazioni:
+# il firmware (native/dc_core, test in C) e la centralina finta dell'app
+# (packages/commissioning_protocol, test in Dart). Se una delle due diverge,
+# fallisce il suo test.
+#
+# Passi:
+#   factory                       stato di fabbrica: revisione 0, setpoint 200, modo 1
+#   config debug=on|off           abilita o no DEBUG_APPLY_THEN_REBOOT (di fabbrica: on)
+#   request <tipo> [campi] -> <risposta> [campi]
+#   send type=<hex> payload=<hex> -> <risposta> [campi]   contenuto arbitrario
+#   raw bytes=<hex> -> <risposta> [campi]                 trama intera; solo test in C,
+#                                                         perché in Dart il CRC non esiste
+#   reboot                        riavvio: resta solo ciò che è stato salvato
+#
+# La risposta REBOOT vuol dire: nessuna risposta, la centralina si riavvia.
+
+scenario name=first_write
+factory
+request GET_STATE -> STATE status=OK revision=0 setpoint=200 mode=1
+request SET_PARAMS expected_revision=0 setpoint=215 mode=1 -> SET_RESULT status=OK revision=1
+request GET_STATE -> STATE status=OK revision=1 setpoint=215 mode=1
+end
+
+scenario name=saved_before_answering
+factory
+request SET_PARAMS expected_revision=0 setpoint=215 mode=2 -> SET_RESULT status=OK revision=1
+reboot
+request GET_STATE -> STATE status=OK revision=1 setpoint=215 mode=2
+end
+
+scenario name=out_of_range_changes_nothing
+factory
+request SET_PARAMS expected_revision=0 setpoint=301 mode=1 -> SET_RESULT status=OUT_OF_RANGE revision=0
+request SET_PARAMS expected_revision=0 setpoint=49 mode=1 -> SET_RESULT status=OUT_OF_RANGE revision=0
+request SET_PARAMS expected_revision=0 setpoint=200 mode=3 -> SET_RESULT status=OUT_OF_RANGE revision=0
+request SET_PARAMS expected_revision=0 setpoint=50 mode=0 -> SET_RESULT status=OK revision=1
+request SET_PARAMS expected_revision=1 setpoint=300 mode=2 -> SET_RESULT status=OK revision=2
+request GET_STATE -> STATE status=OK revision=2 setpoint=300 mode=2
+end
+
+# La risposta è andata persa e l'app ripete la stessa richiesta.
+scenario name=retry_of_applied_change
+factory
+request SET_PARAMS expected_revision=0 setpoint=215 mode=1 -> SET_RESULT status=OK revision=1
+request SET_PARAMS expected_revision=0 setpoint=215 mode=1 -> SET_RESULT status=ALREADY_APPLIED revision=1
+request GET_STATE -> STATE status=OK revision=1 setpoint=215 mode=1
+end
+
+# Il caso per cui esiste la revisione: un nuovo tentativo arrivato in ritardo
+# non deve riportare indietro una modifica più recente.
+scenario name=late_retry_does_not_undo_newer_change
+factory
+request SET_PARAMS expected_revision=0 setpoint=215 mode=1 -> SET_RESULT status=OK revision=1
+request SET_PARAMS expected_revision=1 setpoint=230 mode=1 -> SET_RESULT status=OK revision=2
+request SET_PARAMS expected_revision=0 setpoint=215 mode=1 -> SET_RESULT status=CONFLICT revision=2
+request GET_STATE -> STATE status=OK revision=2 setpoint=230 mode=1
+end
+
+# Due client partono dalla stessa revisione con valori diversi.
+scenario name=second_client_gets_conflict
+factory
+request SET_PARAMS expected_revision=0 setpoint=215 mode=1 -> SET_RESULT status=OK revision=1
+request SET_PARAMS expected_revision=0 setpoint=180 mode=1 -> SET_RESULT status=CONFLICT revision=1
+request GET_STATE -> STATE status=OK revision=1 setpoint=215 mode=1
+end
+
+# Il criterio 4 della voce 3: applica, salva e riavvia senza rispondere.
+# Il nuovo tentativo dopo il riavvio scopre che la modifica c'era.
+scenario name=apply_then_reboot_then_retry
+factory
+request DEBUG_APPLY_THEN_REBOOT expected_revision=0 setpoint=230 mode=2 -> REBOOT
+reboot
+request SET_PARAMS expected_revision=0 setpoint=230 mode=2 -> SET_RESULT status=ALREADY_APPLIED revision=1
+request GET_STATE -> STATE status=OK revision=1 setpoint=230 mode=2
+end
+
+scenario name=debug_command_absent_in_release
+factory
+config debug=off
+request DEBUG_APPLY_THEN_REBOOT expected_revision=0 setpoint=230 mode=2 -> ERROR status=UNKNOWN_TYPE
+request GET_STATE -> STATE status=OK revision=0 setpoint=200 mode=1
+end
+
+scenario name=wrong_payload_length
+factory
+send type=02 payload=0100 -> ERROR status=BAD_PAYLOAD
+send type=01 payload=00 -> ERROR status=BAD_PAYLOAD
+request GET_STATE -> STATE status=OK revision=0 setpoint=200 mode=1
+end
+
+scenario name=unknown_type
+factory
+send type=33 payload=- -> ERROR status=UNKNOWN_TYPE
+send type=81 payload=0003000000d70001 -> ERROR status=UNKNOWN_TYPE
+end
+
+# Da qui in poi solo test in C: la trama intera, con il suo CRC.
+scenario name=corrupted_frame_is_rejected
+factory
+raw bytes=01022a0700010000d7000195ad -> ERROR status=BAD_FRAME
+request GET_STATE -> STATE status=OK revision=0 setpoint=200 mode=1
+end
+
+scenario name=future_version_is_refused
+factory
+raw bytes=02010100a96d -> ERROR status=UNSUPPORTED_VERSION
+end

@@ -1,0 +1,11 @@
+# Generato da protocol/tool/generate_vectors.py: non modificare a mano.
+# message name type <campi> payload
+message name=get_state type=01 payload=-
+message name=set_params type=02 expected_revision=7 setpoint=215 mode=1 payload=07000000d70001
+message name=set_params_large_revision type=02 expected_revision=305419896 setpoint=50 mode=0 payload=78563412320000
+message name=debug_apply_then_reboot type=7f expected_revision=1 setpoint=300 mode=2 payload=010000002c0102
+message name=state type=81 status=0 revision=3 setpoint=215 mode=1 payload=0003000000d70001
+message name=set_result type=82 status=2 revision=9 payload=0209000000
+message name=telemetry type=40 temperature=-35 uptime_s=86400 payload=ddff80510100
+message name=info type=41 protocol_version=1 fw_major=0 fw_minor=1 fw_patch=0 payload=01000100
+message name=error type=ff status=6 payload=06

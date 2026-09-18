@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # I vettori sono il contratto fra firmware e app, e si generano da uno script.
+  # Se qualcuno cambia lo script e dimentica di rigenerarli, o li ritocca a mano,
+  # il contratto che i test leggono non è più quello dichiarato: qui si ferma.
+  vettori:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: I vettori sono quelli generati
+        run: |
+          python protocol/tool/generate_vectors.py
+          git diff --exit-code protocol/vectors
+
+  # Il nucleo in C, costruito e provato sul PC con gcc. In locale gira con MSVC:
+  # due compilatori diversi sugli stessi sorgenti trovano avvisi diversi.
+  dc_core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Costruzione
+        run: |
+          cmake -S native/dc_core -B native/dc_core/out -DCMAKE_BUILD_TYPE=Debug
+          cmake --build native/dc_core/out
+
+      - name: Test
+        run: ctest --test-dir native/dc_core/out --output-on-failure
