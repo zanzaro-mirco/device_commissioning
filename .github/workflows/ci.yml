@@ -37,3 +37,29 @@ jobs:
 
       - name: Test
         run: ctest --test-dir native/dc_core/out --output-on-failure
+
+  # Il protocollo lato app: Dart puro, senza Flutter. Legge gli stessi vettori
+  # del C, quindi gira dalla cartella del pacchetto con il repository intero.
+  commissioning_protocol:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/commissioning_protocol
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Dipendenze
+        run: dart pub get
+
+      - name: Formattazione
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analisi
+        run: dart analyze --fatal-infos
+
+      - name: Test
+        run: dart test

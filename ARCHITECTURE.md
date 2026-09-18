@@ -1,7 +1,7 @@
 # Architettura e scelte di progetto
 
-Il documento cresce con il progetto. Per ora copre il protocollo e il nucleo in C: il resto
-arriva con il pacchetto Dart, il plugin, il firmware e l'app.
+Il documento cresce con il progetto. Per ora copre il protocollo, il nucleo in C e il
+pacchetto Dart. Il resto arriva con il plugin, il firmware e l'app.
 
 ## Un solo codice per il filo, in C
 
@@ -63,9 +63,51 @@ firmware cosa fare (`PERSIST_THEN_RESPOND`). Un `OK` arrivato all'app vuol dire 
 salvato, e controlla anche il contrario: se lo stato cambia senza che la centralina chieda di
 salvarlo, fallisce.
 
+## Il protocollo lato app
+
+`packages/commissioning_protocol` è Dart puro, senza Flutter e senza Bluetooth. Parla con la
+centralina attraverso un `FrameChannel`, che il plugin implementerà sopra il GATT e che nei
+test è `FakeFrameChannel`.
+
+**Una scrittura ha cinque esiti, non due**, e sono una gerarchia `sealed`, così il compilatore
+obbliga l'app a gestirli tutti:
+
+| Esito | Cosa è successo sulla centralina | Cosa fa l'app |
+|---|---|---|
+| `WriteConfirmed` | scritto e salvato (anche `ALREADY_APPLIED`) | mostra il nuovo valore |
+| `WriteConflict` | niente: qualcun altro ha cambiato i parametri | rilegge lo stato |
+| `WriteRejected` | niente: valori fuori dai limiti o trama rifiutata | spiega il motivo |
+| `WriteNotSent` | niente: il canale era già chiuso | propone di riconnettersi |
+| `WriteUncertain` | **forse** | mostra «esito incerto» e ripete la stessa richiesta |
+
+Tre regole decidono il confine fra «rifiutata» e «incerta», e ognuna ha un test:
+- **Il tempo scaduto è incerto, non fallito.** La centralina può aver eseguito e la risposta
+  essersi persa.
+- **Una connessione caduta durante l'invio è incerta, non «non spedita».** I byte possono
+  essere arrivati.
+- **Una risposta illeggibile alla nostra sequenza è incerta, non un rifiuto.** Non sappiamo
+  cosa abbia fatto la centralina.
+
+Le risposte si abbinano alle richieste per **sequenza**, da 1 a 255. Una risposta arrivata dopo
+il suo tempo trova la sequenza già rimossa e viene ignorata: non completa la richiesta
+successiva.
+
+`FakeDevice` riproduce in Dart la logica della centralina ed esegue gli stessi scenari del C,
+tranne i due che contengono una trama intera con il CRC. Lavora sui numeri del filo e non sugli
+enum dell'app: un modo 3 deve arrivare alla centralina ed essere rifiutato come fuori dai
+limiti, non fermarsi prima perché l'app non sa rappresentarlo.
+
+**Un difetto trovato dal primo giro di test.** Un canale chiuso *prima* che il cliente si
+iscrivesse agli eventi non veniva mai visto come chiuso. La richiesta partiva, il canale
+lanciava un'eccezione, e l'esito diventava «incerto» invece di «non spedito». È il caso di una
+connessione caduta mentre l'app sta ancora costruendo la schermata. Il contratto
+`FrameChannel` ora ha `isOpen`, e il cliente lo controlla prima di mandare.
+
 ## Falsificazioni
 
-Ogni difesa è stata tolta a mano per vedere fallire i suoi test (456 controlli in tutto):
+Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
+
+**Nucleo in C** (456 controlli):
 
 | Difesa tolta | Controlli rossi |
 |---|---|
@@ -74,6 +116,16 @@ Ogni difesa è stata tolta a mano per vedere fallire i suoi test (456 controlli 
 | Risposta `ALREADY_APPLIED` | 2, fra cui il riavvio a metà scrittura |
 | Condizione sulla revisione (scrittura sempre accettata) | 14, fra cui il tentativo in ritardo che cancella la modifica più recente |
 | Salvataggio prima della risposta | 11 |
+
+**Protocollo lato app** (40 test):
+
+| Difesa tolta | Test rossi |
+|---|---|
+| `ALREADY_APPLIED` nella centralina finta | 4: due scenari e due test del cliente, fra cui il criterio 4 |
+| Tempo scaduto trattato come riuscita | 4 |
+| Abbinamento delle risposte per sequenza | 1: la risposta in ritardo completava la richiesta successiva |
+| Chiusura del canale che sveglia le attese | 1: l'esito arrivava dopo tre secondi invece che subito |
+| Controllo di `isOpen` prima dell'invio | 1 |
 
 ## Dove ho consapevolmente semplificato
 

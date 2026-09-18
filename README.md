@@ -5,16 +5,19 @@ gesto delle app con cui un installatore configura un'automazione, un regolatore 
 trovare il dispositivo, collegarsi, leggere e cambiare i parametri, e sapere con certezza se
 una modifica è arrivata.
 
-> **Lavori in corso.** Il progetto è la voce 3 del piano di sviluppo del portfolio. Oggi c'è
-> il nucleo del protocollo, in C, con i suoi test. Arrivano il pacchetto Dart, il plugin
-> Bluetooth nativo (Kotlin, poi Swift), il firmware per ESP32-S3 e l'app Flutter.
+> **Lavori in corso.** Il progetto è la voce 3 del piano di sviluppo del portfolio. Oggi ci
+> sono il nucleo del protocollo in C e il protocollo lato app in Dart, con i loro test.
+> Arrivano il plugin Bluetooth nativo (Kotlin, poi Swift), il firmware per ESP32-S3 e l'app
+> Flutter.
 
 ```
-protocol/            il contratto: specifica e vettori di prova, letti da C e da Dart
-native/dc_core/      trama, CRC, messaggi e logica della centralina in C:
-                     un solo codice per il firmware, per Android (JNI) e per iOS e macOS
-packages/            il protocollo lato app (Dart) e il plugin Bluetooth (in arrivo)
-firmware/            ESP-IDF e NimBLE su ESP32-S3 (in arrivo)
+protocol/                          il contratto: specifica e vettori di prova, letti da C e da Dart
+native/dc_core/                    trama, CRC, messaggi e logica della centralina in C:
+                                   un solo codice per il firmware, per Android (JNI) e per iOS e macOS
+packages/commissioning_protocol/   il protocollo lato app: esiti delle scritture, esito incerto,
+                                   centralina finta per i test
+packages/ble_bridge/               il plugin Bluetooth (in arrivo)
+firmware/                          ESP-IDF e NimBLE su ESP32-S3 (in arrivo)
 ```
 
 ## Il punto del progetto
@@ -27,12 +30,20 @@ in ritardo non cancella una modifica più recente. I dettagli sono in
 [`protocol/PROTOCOL.md`](protocol/PROTOCOL.md), le scelte in
 [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-## Provare il nucleo in C
+## Provare quello che c'è
 
 ```bash
 cmake -S native/dc_core -B native/dc_core/out
 cmake --build native/dc_core/out
 ctest --test-dir native/dc_core/out --output-on-failure
+```
+
+E il protocollo lato app:
+
+```bash
+cd packages/commissioning_protocol
+dart pub get
+dart test
 ```
 
 I vettori si rigenerano con `python protocol/tool/generate_vectors.py`.
