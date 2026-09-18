@@ -42,8 +42,8 @@ La pipeline rigenera i vettori e fallisce se differiscono da quelli nel reposito
 
 Gli **scenari** (`scenarios.vec`) sono invece scritti a mano: sono sequenze di richieste e
 risposte attese, cioè il comportamento della centralina detto in chiaro. Il test in C li
-esegue sulla logica vera. Il test in Dart li eseguirà sulla centralina finta con cui si
-provano l'app e il plugin senza hardware. Se la finta smette di comportarsi come la vera,
+esegue sulla logica vera, il test in Dart sulla centralina finta con cui si provano l'app e il
+plugin senza hardware. Se la finta smette di comportarsi come la vera,
 fallisce il suo test.
 
 ## La scrittura condizionata
@@ -66,8 +66,8 @@ salvarlo, fallisce.
 ## Il protocollo lato app
 
 `packages/commissioning_protocol` è Dart puro, senza Flutter e senza Bluetooth. Parla con la
-centralina attraverso un `FrameChannel`, che il plugin implementerà sopra il GATT e che nei
-test è `FakeFrameChannel`.
+centralina attraverso un `FrameChannel`, che il plugin implementa sopra il GATT e che nei test
+è `FakeFrameChannel`.
 
 **Una scrittura ha cinque esiti, non due**, e sono una gerarchia `sealed`, così il compilatore
 obbliga l'app a gestirli tutti:
@@ -77,7 +77,7 @@ obbliga l'app a gestirli tutti:
 | `WriteConfirmed` | scritto e salvato (anche `ALREADY_APPLIED`) | mostra il nuovo valore |
 | `WriteConflict` | niente: qualcun altro ha cambiato i parametri | rilegge lo stato |
 | `WriteRejected` | niente: valori fuori dai limiti o trama rifiutata | spiega il motivo |
-| `WriteNotSent` | niente: il canale era già chiuso | propone di riconnettersi |
+| `WriteNotSent` | niente: il canale era chiuso, o il trasporto ha rifiutato i byte | propone di riprovare o di riconnettersi |
 | `WriteUncertain` | **forse** | mostra «esito incerto» e ripete la stessa richiesta |
 
 Tre regole decidono il confine fra «rifiutata» e «incerta», e ognuna ha un test:
@@ -181,7 +181,9 @@ un'euristica, ed è quella che indica la documentazione di Android.
 - **Kotlin:** i test JVM della coda.
 - **C via JNI:** un test strumentato legge `frames.vec` dagli asset (presi da
   `protocol/vectors`, non copiati) e lo esegue sulla libreria compilata per Android. Gira su
-  emulatore in CI.
+  emulatore in CI. Questo test non è stato falsificato: in locale non c'è un emulatore, e
+  una mutazione andrebbe provata su un ramo, che le regole del portfolio non lasciano aperto.
+  Le difese che controlla sono comunque falsificate nei test in C sul PC.
 - **Bluetooth vero:** con l'ESP32, sul Galaxy S20, quando arriva la scheda.
 
 ## Falsificazioni
