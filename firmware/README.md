@@ -48,12 +48,15 @@ Per ripartire dai valori di fabbrica si cancella la flash con `idf.py erase-flas
 ## La prova con l'hardware
 
 La CI compila i due firmware ma non li può provare. La prova si fa a mano con il firmware di
-debug e l'app sul telefono (Galaxy S20), e controlla i quattro punti del criterio di fatto:
+debug e l'app di debug sul telefono (Galaxy S20, `flutter run` dalla cartella `app`), e
+controlla i quattro punti del criterio di fatto:
 
 1. l'app trova la centralina, si collega e legge le informazioni del dispositivo;
 2. un parametro cambiato sopravvive al riavvio della scheda (tasto `RST`);
 3. la telemetria arriva per notifica;
-4. con il comando di guasto l'app mostra l'esito incerto, e il nuovo tentativo dopo la
-   riconnessione risponde `ALREADY_APPLIED` senza applicare due volte.
+4. con il pulsante «Prova: applica e riavvia senza rispondere» l'app mostra «Modifica non
+   confermata» e lascia come valore corrente quello di prima; «Verifica» si ricollega, e la
+   centralina risponde `ALREADY_APPLIED` senza applicare due volte (la revisione avanza di uno
+   solo).
 
 L'esito della prova, con la data, si annota qui.

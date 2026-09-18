@@ -6,9 +6,9 @@ trovare il dispositivo, collegarsi, leggere e cambiare i parametri, e sapere con
 una modifica è arrivata.
 
 > **Lavori in corso.** Il progetto è la voce 3 del piano di sviluppo del portfolio. Oggi ci
-> sono il nucleo del protocollo in C, il protocollo lato app in Dart e il plugin Bluetooth per
-> Android (Kotlin, Pigeon e il C via JNI), con i loro test, più il firmware per ESP32-S3, che
-> la CI compila. Arrivano l'app Flutter, la prova sull'hardware e il lato Swift.
+> sono il nucleo del protocollo in C, il protocollo lato app in Dart, il plugin Bluetooth per
+> Android (Kotlin, Pigeon e il C via JNI) e l'app Flutter, con i loro test, più il firmware per
+> ESP32-S3, che la CI compila. Arrivano la prova sull'hardware e il lato Swift.
 
 ```
 protocol/                          il contratto: specifica e vettori di prova, letti da C e da Dart
@@ -18,6 +18,7 @@ packages/commissioning_protocol/   il protocollo lato app: esiti delle scritture
                                    centralina finta per i test
 packages/ble_bridge/               il plugin Bluetooth: Pigeon, Kotlin, coda GATT, C via JNI
 firmware/                          la centralina: ESP-IDF e NimBLE su ESP32-S3
+app/                               l'app dell'installatore: Flutter e Cubit
 ```
 
 ## Il punto del progetto
@@ -44,6 +45,13 @@ E il protocollo lato app:
 cd packages/commissioning_protocol
 dart pub get
 dart test
+```
+
+L'app si prova senza hardware, contro la centralina finta:
+
+```bash
+cd app
+flutter test
 ```
 
 Il firmware si costruisce con ESP-IDF: le istruzioni sono in

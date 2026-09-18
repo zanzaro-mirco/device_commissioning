@@ -1,7 +1,8 @@
 # Architettura e scelte di progetto
 
 Il documento cresce con il progetto. Per ora copre il protocollo, il nucleo in C, il pacchetto
-Dart, il plugin Bluetooth per Android e il firmware. Il resto arriva con l'app.
+Dart, il plugin Bluetooth per Android, il firmware e l'app. Il lato Swift arriva con la voce 5
+del piano.
 
 ## Un solo codice per il filo, in C
 
@@ -237,6 +238,50 @@ Il firmware non ha test propri: le sue decisioni sono in `dc_core`, provate e fa
 PC. Resta da provare quello che solo l'hardware dice, cioè i punti 1-4 del criterio di fatto,
 con la scheda e il Galaxy S20 (vedi `firmware/README.md`). In CI il firmware si compila.
 
+## L'app
+
+`app/` è Flutter con Cubit, come `pos_sync`. Due cubit, uno per schermata: la ricerca delle
+centraline e la centralina collegata.
+
+### Un'interfaccia fra i cubit e il Bluetooth
+
+I cubit non conoscono il plugin: parlano con `DeviceLink`, che fa quattro cose (stato del
+Bluetooth, permessi, scansione, connessione). La versione vera sta sopra `BleBridge`; quella dei
+test sopra la `FakeDevice` di `commissioning_protocol`, con i suoi guasti. Così l'app si prova
+intera, pagine comprese, senza hardware e senza canali di piattaforma.
+
+### L'esito incerto nell'interfaccia
+
+Lo stato della schermata tiene separati due valori:
+- `confirmed`, l'ultimo stato che la centralina ha confermato. È il solo mostrato come valore
+  corrente.
+- `uncertain`, la richiesta partita e mai confermata. Compare in un riquadro a parte, e finché
+  c'è non partono scritture nuove.
+
+La verifica ripete **la stessa richiesta**, con la stessa revisione attesa. Se la connessione è
+caduta, la ripete da sola alla riconnessione. La tentazione opposta, cioè rileggere lo stato e
+costruire una richiesta nuova sulla revisione riletta, sembra più prudente ed è sbagliata: se la
+prima era arrivata, la seconda la applica di nuovo e porta la revisione avanti di due.
+
+Un nuovo tentativo che non parte (`WriteNotSent`) **non** scioglie il dubbio: quello che non è
+partito è il nuovo tentativo, non il primo.
+
+### Il comando di guasto
+
+L'app di debug ha un pulsante in più che manda `DEBUG_APPLY_THEN_REBOOT`. In un'app di
+produzione non compare. Se la centralina ha il firmware da installare, il comando viene
+rifiutato come tipo sconosciuto, e l'app lo dice.
+
+### Come si prova
+
+- **Cubit** in tempo finto: le attese di tre secondi del cliente passano in un istante.
+- **Pagine** con i widget test: il valore incerto non prende il posto di quello confermato, e
+  «Verifica» lo risolve.
+- **Il caso limite del tempo finto.** Chiudere un cubit aspetta la cancellazione delle
+  iscrizioni agli stream. Per un broadcast stream quel futuro appartiene alla zona radice di
+  Dart, che il tempo finto non fa avanzare. I test che chiudono un cubit girano quindi in tempo
+  vero.
+
 ## Falsificazioni
 
 Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
@@ -268,6 +313,15 @@ Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
 | Aspettare la fine dell'operazione in corso | 4 |
 | Controllo della chiave della callback | 1: la callback tardiva chiudeva l'operazione successiva |
 | Scadenza delle operazioni | 1 |
+
+**App** (27 test):
+
+| Difesa tolta | Test rossi |
+|---|---|
+| Il valore incerto resta fuori dallo stato confermato | 3: la risposta persa, il criterio 4 e la pagina |
+| Il nuovo tentativo è la stessa richiesta (costruito invece sulla revisione riletta) | 2: il criterio 4 e la riconnessione, con la modifica applicata due volte |
+| Un nuovo tentativo non partito lascia il dubbio | 1 |
+| Nessuna scrittura nuova durante il dubbio | 3 |
 
 ## Dove ho consapevolmente semplificato
 
