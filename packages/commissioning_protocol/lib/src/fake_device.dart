@@ -166,6 +166,10 @@ class FakeFrameChannel implements FrameChannel {
   /// richiesta e prima che la risposta arrivi.
   bool closeBeforeNextResponse = false;
 
+  /// Il prossimo invio fallisce con questo errore, prima di arrivare alla
+  /// centralina. Serve a provare come il cliente interpreta ogni errore.
+  Object? failNextSend;
+
   final sent = <Frame>[];
 
   @override
@@ -177,6 +181,11 @@ class FakeFrameChannel implements FrameChannel {
   @override
   Future<void> send(Frame frame) async {
     if (!_open) throw const ChannelClosedException();
+    final failure = failNextSend;
+    if (failure != null) {
+      failNextSend = null;
+      throw failure;
+    }
     sent.add(frame);
     final reply = device.handle(frame);
     switch (reply.action) {

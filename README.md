@@ -6,9 +6,9 @@ trovare il dispositivo, collegarsi, leggere e cambiare i parametri, e sapere con
 una modifica è arrivata.
 
 > **Lavori in corso.** Il progetto è la voce 3 del piano di sviluppo del portfolio. Oggi ci
-> sono il nucleo del protocollo in C e il protocollo lato app in Dart, con i loro test.
-> Arrivano il plugin Bluetooth nativo (Kotlin, poi Swift), il firmware per ESP32-S3 e l'app
-> Flutter.
+> sono il nucleo del protocollo in C, il protocollo lato app in Dart e il plugin Bluetooth per
+> Android (Kotlin, Pigeon e il C via JNI), con i loro test. Arrivano il firmware per ESP32-S3,
+> l'app Flutter, la prova sull'hardware e il lato Swift.
 
 ```
 protocol/                          il contratto: specifica e vettori di prova, letti da C e da Dart
@@ -16,7 +16,7 @@ native/dc_core/                    trama, CRC, messaggi e logica della centralin
                                    un solo codice per il firmware, per Android (JNI) e per iOS e macOS
 packages/commissioning_protocol/   il protocollo lato app: esiti delle scritture, esito incerto,
                                    centralina finta per i test
-packages/ble_bridge/               il plugin Bluetooth (in arrivo)
+packages/ble_bridge/               il plugin Bluetooth: Pigeon, Kotlin, coda GATT, C via JNI
 firmware/                          ESP-IDF e NimBLE su ESP32-S3 (in arrivo)
 ```
 

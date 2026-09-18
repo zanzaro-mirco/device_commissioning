@@ -1,0 +1,32 @@
+name: ble_bridge
+description: Il plugin Bluetooth LE della messa in servizio - scansione, connessione, trame codificate e verificate nel C condiviso con il firmware, via Pigeon verso Kotlin (poi Swift).
+version: 0.1.0
+publish_to: none
+repository: https://github.com/zanzaro-mirco/device_commissioning
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.41.0"
+
+dependencies:
+  commissioning_protocol:
+    path: ../commissioning_protocol
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  pigeon: ^29.0.2
+
+# Niente `plugin_platform_interface`, come in pos_printer_bridge: la
+# struttura federata serve quando più pacchetti implementano lo stesso
+# contratto. Qui il contratto è il file di Pigeon, e Android e Apple stanno
+# nello stesso pacchetto.
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: it.mircozanzaro.ble_bridge
+        pluginClass: BleBridgePlugin

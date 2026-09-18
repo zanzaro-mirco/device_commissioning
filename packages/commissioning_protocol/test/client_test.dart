@@ -186,6 +186,32 @@ void main() {
     });
   });
 
+  group('errori durante l\'invio', () {
+    test('un rifiuto certo del trasporto: non spedita, niente scritto', () {
+      final device = FakeDevice();
+      final outcome = _run((_) async {
+        final channel = FakeFrameChannel(device)
+          ..failNextSend = const FrameRejectedException('stato ATT 3');
+        return CommissioningClient(channel).setParams(
+          const SetParamsRequest(expectedRevision: 0, params: _comfort215),
+        );
+      });
+      expect((outcome as WriteNotSent).reason, 'stato ATT 3');
+      expect(device.revision, 0);
+    });
+
+    test('un errore qualsiasi del trasporto è incerto, non un rifiuto', () {
+      final outcome = _run((_) async {
+        final channel = FakeFrameChannel(FakeDevice())
+          ..failNextSend = StateError('tempo scaduto nel nativo');
+        return CommissioningClient(channel).setParams(
+          const SetParamsRequest(expectedRevision: 0, params: _comfort215),
+        );
+      });
+      expect(outcome, isA<WriteUncertain>());
+    });
+  });
+
   group('sequenze', () {
     test(
         'una risposta arrivata dopo il suo tempo non completa la richiesta successiva',

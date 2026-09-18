@@ -12,8 +12,11 @@ abstract interface class FrameChannel {
 
   /// Completa quando la centralina ha ricevuto i byte (la scrittura con
   /// risposta del GATT). Non dice niente sull'esito del comando: quello
-  /// arriva come trama su [events]. Lancia [ChannelClosedException] se il
-  /// canale è chiuso.
+  /// arriva come trama su [events].
+  ///
+  /// Lancia [FrameRejectedException] solo se è **certo** che i byte non sono
+  /// stati accettati. Qualunque altro errore, compresa
+  /// [ChannelClosedException], lascia l'esito sconosciuto.
   Future<void> send(Frame frame);
 }
 
@@ -37,6 +40,17 @@ class FrameCorrupted extends ChannelEvent {
 
 class ChannelClosed extends ChannelEvent {
   const ChannelClosed();
+}
+
+/// I byte non sono stati accettati, con certezza: il sistema ha rifiutato di
+/// mandarli, o la centralina ha risposto con un errore del livello ATT.
+class FrameRejectedException implements Exception {
+  const FrameRejectedException(this.reason);
+
+  final String reason;
+
+  @override
+  String toString() => 'FrameRejectedException: $reason';
 }
 
 class ChannelClosedException implements Exception {

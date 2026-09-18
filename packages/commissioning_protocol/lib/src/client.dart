@@ -56,10 +56,12 @@ class WriteRejected extends WriteOutcome {
   final int code;
 }
 
-/// Il canale era già chiuso: la richiesta non è partita, niente è stato
-/// scritto.
+/// La richiesta non è partita, o è stata rifiutata prima di arrivare alla
+/// logica della centralina: niente è stato scritto.
 class WriteNotSent extends WriteOutcome {
-  const WriteNotSent();
+  const WriteNotSent(this.reason);
+
+  final String reason;
 }
 
 /// La richiesta è partita e la risposta non è arrivata. La modifica **può**
@@ -107,8 +109,8 @@ class CommissioningClient {
   Future<ReadOutcome> readState() async {
     final reply = await _exchange(MessageType.getState, Uint8List(0));
     switch (reply) {
-      case _NotSent():
-        return const ReadFailed('canale chiuso');
+      case _NotSent(:final reason):
+        return ReadFailed(reason);
       case _NoResponse(:final reason):
         return ReadFailed(reason);
       case _Response(:final frame):
@@ -131,8 +133,8 @@ class CommissioningClient {
   Future<WriteOutcome> _write(int type, SetParamsRequest request) async {
     final reply = await _exchange(type, request.encode());
     switch (reply) {
-      case _NotSent():
-        return const WriteNotSent();
+      case _NotSent(:final reason):
+        return WriteNotSent(reason);
       case _NoResponse(:final reason):
         return WriteUncertain(request, reason);
       case _Response(:final frame):
@@ -179,12 +181,20 @@ class CommissioningClient {
     });
     try {
       await _channel.send(Frame(type, seq, payload));
+    } on FrameRejectedException catch (error) {
+      // L'unico errore d'invio che dà una certezza: niente è stato accettato.
+      if (!completer.isCompleted) completer.complete(_NotSent(error.reason));
     } on ChannelClosedException {
       // La connessione è caduta durante la scrittura: i byte possono essere
       // arrivati o no. Non è un «non spedito», è un esito incerto.
       if (!completer.isCompleted) {
         completer
             .complete(const _NoResponse('connessione caduta durante l\'invio'));
+      }
+    } catch (error) {
+      // Qualunque altro errore lascia l'esito sconosciuto: nel dubbio, incerto.
+      if (!completer.isCompleted) {
+        completer.complete(_NoResponse('errore durante l\'invio: $error'));
       }
     }
     final reply = await completer.future;
@@ -256,5 +266,7 @@ class _NoResponse extends _Reply {
 }
 
 class _NotSent extends _Reply {
-  const _NotSent();
+  const _NotSent([this.reason = 'canale chiuso']);
+
+  final String reason;
 }

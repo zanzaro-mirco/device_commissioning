@@ -1,7 +1,7 @@
 # Architettura e scelte di progetto
 
-Il documento cresce con il progetto. Per ora copre il protocollo, il nucleo in C e il
-pacchetto Dart. Il resto arriva con il plugin, il firmware e l'app.
+Il documento cresce con il progetto. Per ora copre il protocollo, il nucleo in C, il pacchetto
+Dart e il plugin Bluetooth per Android. Il resto arriva con il firmware e l'app.
 
 ## Un solo codice per il filo, in C
 
@@ -103,6 +103,87 @@ lanciava un'eccezione, e l'esito diventava «incerto» invece di «non spedito»
 connessione caduta mentre l'app sta ancora costruendo la schermata. Il contratto
 `FrameChannel` ora ha `isOpen`, e il cliente lo controlla prima di mandare.
 
+## Il plugin Bluetooth
+
+`packages/ble_bridge` porta il protocollo sul GATT di Android. Il lato Swift arriva con la voce
+5.
+
+### Perché un plugin scritto a mano
+
+Esistono librerie Bluetooth per Flutter. `universal_ble` è BSD-3, supporta Android, iOS,
+macOS, Windows, Linux e web, ed è un'alternativa legittima: in un progetto di lavoro sarebbe il
+primo candidato da valutare. **`flutter_blue_plus` invece è escluso dalla licenza**: dalla
+FlutterBluePlus License 1.5 qualunque azienda a scopo di lucro deve comprare una licenza
+commerciale, anche solo per sviluppare e valutare.
+
+Il plugin qui è scritto a mano per tre ragioni:
+- **Il C del protocollo va chiamato dal nativo.** La trama viene codificata e verificata dallo
+  stesso codice del firmware, via JNI (e, per Swift, direttamente). Con una libreria generica
+  il Dart riceverebbe byte grezzi e il CRC andrebbe riscritto in Dart.
+- **Gli errori devono distinguere «rifiutato» da «sconosciuto».** Il protocollo ha bisogno di
+  sapere se una scrittura fallita è partita o no. Un'API generica restituisce di solito un
+  errore e basta.
+- **È la competenza che il progetto deve dimostrare:** un platform channel tipizzato verso
+  codice nativo che parla con una periferica.
+
+### Pigeon, e il codice generato nel repository
+
+Il contratto fra Dart e Kotlin è `pigeons/ble_api.dart`. Pigeon genera i due lati, tipizzati:
+un campo rinominato da una parte sola fa fallire la compilazione, non l'app sul telefono.
+- Il codice generato è **versionato**: chi legge il repository vede cosa attraversa il canale
+  senza dover eseguire niente. La pipeline lo rigenera e fallisce se differisce.
+- Gli eventi (risultati della scansione, trame, trame rovinate, connessione) viaggiano su un
+  solo `EventChannel` come gerarchia `sealed`, e il Dart li smista per dispositivo.
+- Pigeon 29 genera i metodi `@async` come funzioni `suspend` lanciate sul thread principale.
+
+### Una operazione GATT alla volta
+
+Il GATT di Android esegue un'operazione per volta. Una seconda scrittura chiesta prima della
+callback della prima viene rifiutata, oppure accettata e persa, a seconda della versione e del
+produttore del telefono. `GattOperationQueue` le mette in fila. È Kotlin puro, provato sulla
+JVM con un orologio finto, perché la parte difficile è l'ordine degli eventi, non il Bluetooth.
+- **Ogni operazione ha una chiave** (`write:<uuid>`, `read:<uuid>`, `notify:<uuid>`). La
+  callback tardiva di un'operazione già scaduta ha una chiave diversa da quella in corso, e si
+  ignora. Senza chiave chiuderebbe l'operazione successiva con l'esito di un'altra.
+- **Tutto gira sul thread principale.** Le callback del GATT arrivano su un thread di sistema e
+  vengono riportate lì prima di toccare la coda. Nessun lock, quindi nessuno da dimenticare.
+- **Le callback cambiano firma da Android 13**: il valore arriva come parametro invece di
+  leggerlo dalla caratteristica, che nel frattempo poteva essere cambiata. Il plugin le
+  implementa tutte e due e ignora quella vecchia sulle versioni nuove.
+
+### Dal Kotlin agli esiti del protocollo
+
+La traduzione degli errori è il punto in cui il Bluetooth incontra la scrittura condizionata:
+
+| Cosa succede nel Kotlin | Codice | Nel Dart | Esito della scrittura |
+|---|---|---|---|
+| il sistema rifiuta di avviare l'operazione | `rejected` | `FrameRejectedException` | `WriteNotSent` |
+| la centralina risponde con un errore ATT | `rejected` | `FrameRejectedException` | `WriteNotSent` |
+| nessuna callback in tempo | `timeout` | `PlatformException` | `WriteUncertain` |
+| la connessione cade durante l'operazione | `disconnected` | `ChannelClosedException` | `WriteUncertain` |
+| qualunque altro errore | vari | `PlatformException` | `WriteUncertain` |
+
+Solo un rifiuto **certo** diventa «non spedita»: nel dubbio, l'esito è incerto, e il nuovo
+tentativo lo risolve senza rischi. Per questo il contratto `FrameChannel` ha ora anche
+`FrameRejectedException`, e il cliente tratta come incerto ogni errore che non riconosce.
+
+### Permessi
+
+Da Android 12 servono `BLUETOOTH_SCAN` (dichiarato `neverForLocation`) e `BLUETOOTH_CONNECT`.
+Fino ad Android 11 serve la posizione, perché una scansione può rivelarla. Il rifiuto
+permanente si riconosce con `shouldShowRequestPermissionRationale` dopo la risposta: è
+un'euristica, ed è quella che indica la documentazione di Android.
+
+### Come si prova
+
+- **Dart:** un `BleHostApi` finto appoggiato alla `FakeDevice` fa girare il cliente vero
+  attraverso il canale vero, con gli errori della piattaforma iniettati uno per uno.
+- **Kotlin:** i test JVM della coda.
+- **C via JNI:** un test strumentato legge `frames.vec` dagli asset (presi da
+  `protocol/vectors`, non copiati) e lo esegue sulla libreria compilata per Android. Gira su
+  emulatore in CI.
+- **Bluetooth vero:** con l'ESP32, sul Galaxy S20, quando arriva la scheda.
+
 ## Falsificazioni
 
 Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
@@ -117,7 +198,7 @@ Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
 | Condizione sulla revisione (scrittura sempre accettata) | 14, fra cui il tentativo in ritardo che cancella la modifica più recente |
 | Salvataggio prima della risposta | 11 |
 
-**Protocollo lato app** (40 test):
+**Protocollo lato app** (40 test al momento della prova):
 
 | Difesa tolta | Test rossi |
 |---|---|
@@ -126,6 +207,14 @@ Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
 | Abbinamento delle risposte per sequenza | 1: la risposta in ritardo completava la richiesta successiva |
 | Chiusura del canale che sveglia le attese | 1: l'esito arrivava dopo tre secondi invece che subito |
 | Controllo di `isOpen` prima dell'invio | 1 |
+
+**Coda GATT** (8 test JVM):
+
+| Difesa tolta | Test rossi |
+|---|---|
+| Aspettare la fine dell'operazione in corso | 4 |
+| Controllo della chiave della callback | 1: la callback tardiva chiudeva l'operazione successiva |
+| Scadenza delle operazioni | 1 |
 
 ## Dove ho consapevolmente semplificato
 

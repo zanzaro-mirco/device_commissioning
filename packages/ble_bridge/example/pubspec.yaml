@@ -1,0 +1,22 @@
+name: ble_bridge_example
+description: L'esempio minimo del plugin ble_bridge.
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  ble_bridge:
+    path: ../
+  commissioning_protocol:
+    path: ../../commissioning_protocol
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
