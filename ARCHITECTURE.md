@@ -1,7 +1,7 @@
 # Architettura e scelte di progetto
 
 Il documento cresce con il progetto. Per ora copre il protocollo, il nucleo in C, il pacchetto
-Dart e il plugin Bluetooth per Android. Il resto arriva con il firmware e l'app.
+Dart, il plugin Bluetooth per Android e il firmware. Il resto arriva con l'app.
 
 ## Un solo codice per il filo, in C
 
@@ -186,6 +186,57 @@ un'euristica, ed è quella che indica la documentazione di Android.
   Le difese che controlla sono comunque falsificate nei test in C sul PC.
 - **Bluetooth vero:** con l'ESP32, sul Galaxy S20, quando arriva la scheda.
 
+## Il firmware
+
+`firmware/` è il minimo per avere un interlocutore vero: ESP-IDF 6.1 e NimBLE su una
+ESP32-S3. Non contiene logica del protocollo. Riceve i byte, li passa a `dc_device_handle` di
+`native/dc_core` e fa quello che la funzione gli dice: rispondere, salvare e poi rispondere,
+oppure salvare e riavviare.
+
+### La risposta ATT non è l'esito
+
+La scrittura sui comandi è con risposta, e NimBLE manda la risposta ATT quando la funzione di
+accesso torna. Per questo la funzione di accesso **non esegue il comando**: lo mette in una coda
+e torna subito. Il comando lo esegue il task della centralina, e l'esito parte dopo come
+notifica. Così la risposta ATT vuol dire solo «i byte sono arrivati», come scritto in
+`protocol/PROTOCOL.md`, e il salvataggio su NVS, che può durare decine di millisecondi, non
+blocca lo stack Bluetooth.
+
+Se la coda è piena, la scrittura fallisce a livello ATT. Il plugin la riporta come rifiutata, e
+l'app sa che il comando non è partito.
+
+### Un solo task tocca lo stato
+
+Il task della centralina esegue i comandi in ordine e, quando non ne arrivano, manda la
+telemetria. Lo stato è suo e di nessun altro: non servono lock. Il task di NimBLE scrive solo
+la connessione corrente e l'iscrizione alla telemetria, due valori piccoli che si leggono in
+modo atomico.
+
+### Salvare prima di rispondere
+
+- `OK` parte solo dopo `nvs_set_blob` e `nvs_commit`. Senza il commit il valore può restare in
+  memoria.
+- Se il salvataggio fallisce, lo stato in memoria torna quello di prima e **non si risponde**.
+  L'app vede un esito incerto e ripete la stessa richiesta. Rispondere `OK` sarebbe una bugia,
+  e non esiste un codice di stato per «flash rotta» che l'app saprebbe usare meglio di un nuovo
+  tentativo.
+- Lo stato si salva in un formato fisso di otto byte, con una versione in testa, e non come
+  struct: la disposizione di una struct in memoria dipende dal compilatore.
+- Se i valori letti dalla flash sono fuori dai limiti, la centralina riparte da quelli di
+  fabbrica invece di applicarli.
+
+### Il comando di guasto
+
+`DEBUG_APPLY_THEN_REBOOT` applica, salva e riavvia senza rispondere. Esiste solo nel firmware
+costruito con `sdkconfig.debug`, attraverso l'opzione `CONFIG_DC_DEBUG_COMMANDS`. La CI
+costruisce entrambi i firmware e controlla che in quello da installare l'opzione sia spenta.
+
+### Come si prova
+
+Il firmware non ha test propri: le sue decisioni sono in `dc_core`, provate e falsificate sul
+PC. Resta da provare quello che solo l'hardware dice, cioè i punti 1-4 del criterio di fatto,
+con la scheda e il Galaxy S20 (vedi `firmware/README.md`). In CI il firmware si compila.
+
 ## Falsificazioni
 
 Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
@@ -231,3 +282,6 @@ Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
   avrebbe senza risposta.
 - **Un solo parametro composto** (setpoint e modo): basta per mostrare letture, scritture
   condizionate e conflitti, e non serve un modello di parametri generico.
+- **Il firmware è il minimo.** La temperatura è simulata, c'è una connessione alla volta, non
+  c'è associazione né cifratura (arrivano con la voce 8 del piano) e non c'è aggiornamento del
+  firmware via Bluetooth (voce 6).

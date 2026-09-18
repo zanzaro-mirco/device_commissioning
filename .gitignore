@@ -11,6 +11,7 @@ native/**/out/
 
 # ESP-IDF
 firmware/build/
+firmware/build-debug/
 firmware/sdkconfig
 firmware/sdkconfig.old
 firmware/managed_components/

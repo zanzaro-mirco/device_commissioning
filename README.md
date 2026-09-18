@@ -7,8 +7,8 @@ una modifica è arrivata.
 
 > **Lavori in corso.** Il progetto è la voce 3 del piano di sviluppo del portfolio. Oggi ci
 > sono il nucleo del protocollo in C, il protocollo lato app in Dart e il plugin Bluetooth per
-> Android (Kotlin, Pigeon e il C via JNI), con i loro test. Arrivano il firmware per ESP32-S3,
-> l'app Flutter, la prova sull'hardware e il lato Swift.
+> Android (Kotlin, Pigeon e il C via JNI), con i loro test, più il firmware per ESP32-S3, che
+> la CI compila. Arrivano l'app Flutter, la prova sull'hardware e il lato Swift.
 
 ```
 protocol/                          il contratto: specifica e vettori di prova, letti da C e da Dart
@@ -17,7 +17,7 @@ native/dc_core/                    trama, CRC, messaggi e logica della centralin
 packages/commissioning_protocol/   il protocollo lato app: esiti delle scritture, esito incerto,
                                    centralina finta per i test
 packages/ble_bridge/               il plugin Bluetooth: Pigeon, Kotlin, coda GATT, C via JNI
-firmware/                          ESP-IDF e NimBLE su ESP32-S3 (in arrivo)
+firmware/                          la centralina: ESP-IDF e NimBLE su ESP32-S3
 ```
 
 ## Il punto del progetto
@@ -45,6 +45,9 @@ cd packages/commissioning_protocol
 dart pub get
 dart test
 ```
+
+Il firmware si costruisce con ESP-IDF: le istruzioni sono in
+[`firmware/README.md`](firmware/README.md).
 
 I vettori si rigenerano con `python protocol/tool/generate_vectors.py`.
 

@@ -1,0 +1,11 @@
+menu "Centralina"
+
+    config DC_DEBUG_COMMANDS
+        bool "Accetta DEBUG_APPLY_THEN_REBOOT"
+        default n
+        help
+            Il comando applica una modifica, la salva e riavvia la centralina senza
+            rispondere: serve a produrre davvero l'esito incerto nell'app. Un firmware
+            da installare in campo non deve averlo.
+
+endmenu

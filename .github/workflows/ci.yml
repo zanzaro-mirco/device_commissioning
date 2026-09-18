@@ -38,6 +38,36 @@ jobs:
       - name: Test
         run: ctest --test-dir native/dc_core/out --output-on-failure
 
+  # Il firmware, costruito due volte con l'immagine ufficiale di ESP-IDF: quello
+  # da installare e quello di debug con il comando di guasto. Il nucleo in C è lo
+  # stesso del lavoro dc_core, qui compilato per l'ESP32-S3. La prova con la
+  # scheda vera non gira in CI: è documentata in firmware/README.md.
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Il controllo su sdkconfig ferma una configurazione che accendesse il
+      # comando di guasto nel firmware da installare.
+      - name: Firmware da installare
+        uses: espressif/esp-idf-ci-action@v1.2.0
+        with:
+          esp_idf_version: v6.1
+          target: esp32s3
+          path: firmware
+          command: idf.py build && ! grep -q ^CONFIG_DC_DEBUG_COMMANDS=y sdkconfig
+
+      - name: Firmware di debug
+        uses: espressif/esp-idf-ci-action@v1.2.0
+        with:
+          esp_idf_version: v6.1
+          target: esp32s3
+          path: firmware
+          command: >-
+            idf.py -B build-debug -D SDKCONFIG=build-debug/sdkconfig
+            -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.debug" build
+            && grep -q ^CONFIG_DC_DEBUG_COMMANDS=y build-debug/sdkconfig
+
   # Il protocollo lato app: Dart puro, senza Flutter. Legge gli stessi vettori
   # del C, quindi gira dalla cartella del pacchetto con il repository intero.
   commissioning_protocol:

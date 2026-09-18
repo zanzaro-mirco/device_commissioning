@@ -1,0 +1,9 @@
+# La scheda è una ESP32-S3 N16R8: 16 MB di flash. La PSRAM non serve e resta spenta.
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_50_FEATURE_SUPPORT=n
+# Una centralina, un installatore alla volta.
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1

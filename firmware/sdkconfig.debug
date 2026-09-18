@@ -1,0 +1,2 @@
+# Si aggiunge a sdkconfig.defaults per il firmware di debug (vedi README.md).
+CONFIG_DC_DEBUG_COMMANDS=y
