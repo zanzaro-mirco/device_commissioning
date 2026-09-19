@@ -96,5 +96,9 @@ incerto mostrava 20,0 °C mentre il valore confermato restava 21,0 °C alla revi
 la revisione 3. Un `OK` avrebbe portato alla revisione 4, un conflitto avrebbe mostrato un altro
 messaggio.
 
+| Prima di «Verifica» | Dopo «Verifica» |
+|---|---|
+| <img src="docs/uncertain.png" width="300" alt="Centralina scollegata; riquadro rosso «Modifica non confermata» per 20,0 °C comfort; sotto, 21,0 °C comfort come ultimo valore letto, revisione 2"> | <img src="docs/already-applied.png" width="300" alt="Centralina collegata; 20,0 °C comfort confermato dalla centralina, revisione 3; messaggio «La modifica era già arrivata: confermata, senza applicarla due volte»"> |
+
 La prova ha trovato un solo difetto, di aspetto: nel selettore della modalità «Comfort» andava a
-capo. È corretto nello stesso commit che registra la prova.
+capo, come si vede nelle due schermate. È corretto nel commit che registra la prova.
