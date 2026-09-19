@@ -296,6 +296,9 @@ class _ParamsEditorState extends State<_ParamsEditor> {
             ),
             const SizedBox(height: 12),
             SegmentedButton<Mode>(
+              // Con il segno di spunta «Comfort» andava a capo su un telefono
+              // da 6,2 pollici: la selezione si vede già dal colore.
+              showSelectedIcon: false,
               segments: [
                 for (final mode in Mode.values)
                   ButtonSegment(value: mode, label: Text(modeLabel(mode))),

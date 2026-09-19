@@ -185,7 +185,8 @@ un'euristica, ed è quella che indica la documentazione di Android.
   emulatore in CI. Questo test non è stato falsificato: in locale non c'è un emulatore, e
   una mutazione andrebbe provata su un ramo, che le regole del portfolio non lasciano aperto.
   Le difese che controlla sono comunque falsificate nei test in C sul PC.
-- **Bluetooth vero:** con l'ESP32, sul Galaxy S20, quando arriva la scheda.
+- **Bluetooth vero:** con l'ESP32-S3 e il Galaxy S20, il 19 settembre 2026. I quattro punti
+  del criterio di fatto sono superati; l'esito è in `firmware/README.md`.
 
 ## Il firmware
 
@@ -235,8 +236,9 @@ costruisce entrambi i firmware e controlla che in quello da installare l'opzione
 ### Come si prova
 
 Il firmware non ha test propri: le sue decisioni sono in `dc_core`, provate e falsificate sul
-PC. Resta da provare quello che solo l'hardware dice, cioè i punti 1-4 del criterio di fatto,
-con la scheda e il Galaxy S20 (vedi `firmware/README.md`). In CI il firmware si compila.
+PC. Quello che solo l'hardware dice, cioè i punti 1-4 del criterio di fatto, è stato provato a
+mano con la scheda e il Galaxy S20 il 19 settembre 2026 (esito in `firmware/README.md`). In CI il
+firmware si compila, e i binari sono pubblicati come artefatti.
 
 ## L'app
 

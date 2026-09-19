@@ -23,27 +23,44 @@ main/store.c   lo stato su NVS
 Il comando di guasto applica una modifica, la salva e riavvia la scheda senza rispondere: serve
 a produrre davvero l'esito incerto nell'app.
 
-## Costruire e caricare
+## Caricare senza installare ESP-IDF
+
+La CI pubblica i binari dei due firmware come artefatti di ogni esecuzione: `firmware` e
+`firmware-debug`. Bastano [uv](https://docs.astral.sh/uv/) ed esptool, che `uvx` esegue senza
+installarlo:
+
+```bash
+gh run download <id-esecuzione> -n firmware-debug -D firmware-debug
+cd firmware-debug
+uvx esptool@5.4.0 --chip esp32s3 --port COM8 --baud 460800 write-flash --flash-mode dio --flash-size 16MB --flash-freq 80m 0x0 bootloader/bootloader.bin 0x8000 partition_table/partition-table.bin 0x10000 centralina.bin
+```
+
+Gli indirizzi sono quelli di `flasher_args.json`, che accompagna i binari. La scheda va collegata
+alla porta USB-C marcata **COM** (il convertitore CH343): da lì esptool la riavvia da solo in
+modalità di caricamento, ed escono i messaggi di avvio. `COM8` è la porta del PC su cui è stata
+fatta la prova: la propria si vede in Gestione dispositivi.
+
+## Costruire e caricare con ESP-IDF
 
 Serve ESP-IDF 6.1 ([guida di installazione](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/get-started/index.html)).
 Da un terminale di ESP-IDF, nella cartella `firmware`:
 
 ```bash
 idf.py build
-idf.py -p COM5 flash monitor
+idf.py -p COM8 flash monitor
 ```
 
 Il firmware di debug si costruisce in una cartella a parte, così i due non si mescolano:
 
 ```bash
-idf.py -B build-debug -D SDKCONFIG=build-debug/sdkconfig -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.debug" -p COM5 flash monitor
+idf.py -B build-debug -D SDKCONFIG=build-debug/sdkconfig -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.debug" -p COM8 flash monitor
 ```
 
-`COM5` è un esempio: la porta giusta si vede in Gestione dispositivi quando la scheda è
-collegata. All'avvio il monitor scrive la versione del firmware, se i comandi di debug sono
-attivi e il nome con cui la scheda si annuncia (`DC-` seguito da quattro cifre esadecimali).
+All'avvio la scheda scrive la versione del firmware, se i comandi di debug sono attivi e il nome
+con cui si annuncia (`DC-` seguito dalle ultime quattro cifre dell'indirizzo Bluetooth).
 
-Per ripartire dai valori di fabbrica si cancella la flash con `idf.py erase-flash`.
+Per ripartire dai valori di fabbrica si cancella la flash con `idf.py erase-flash`, oppure con
+`uvx esptool@5.4.0 --chip esp32s3 --port COM8 erase-flash`.
 
 ## La prova con l'hardware
 
@@ -59,4 +76,25 @@ controlla i quattro punti del criterio di fatto:
    centralina risponde `ALREADY_APPLIED` senza applicare due volte (la revisione avanza di uno
    solo).
 
-L'esito della prova, con la data, si annota qui.
+### Esito: 19 settembre 2026, tutti e quattro i punti superati
+
+Firmware di debug dalla CI (ESP-IDF 6.1) su ESP32-S3 DevKitC-1 N16R8, app di debug su Galaxy S20
+con Android 13. Ogni punto è confermato da due lati: quello che si vede nell'app e i messaggi
+della scheda sulla seriale.
+
+| Punto | Nell'app | Sulla scheda |
+|---|---|---|
+| 1 | DC-924E trovata; «Collegata», firmware 0.1.0, protocollo 1, 20,0 °C comfort, revisione 0 | connessione; il telefono scopre il servizio e accende le due notifiche |
+| 2 | 22,0 °C economia salvato (revisione 1); dopo `RST` e «Ricollega», di nuovo 22,0 °C economia, revisione 1 | dopo il riavvio: «stato caricato: revisione 1» |
+| 3 | la temperatura sale di un decimo ogni due secondi fino a 19,0 °C (economia: tre gradi sotto il setpoint) | una notifica ogni due secondi |
+| 4 | riquadro «Modifica non confermata» e «Scollegata»; dopo «Verifica», 21,0 °C comfort alla revisione 2, non 3 | «modifica salvata, riavvio senza rispondere», poi «stato caricato: revisione 2» |
+
+Il punto 4 è stato ripetuto (20,0 °C comfort, dalla revisione 2 alla 3) registrando lo schermo
+del telefono, perché la prima volta il messaggio finale non era stato annotato: il riquadro
+incerto mostrava 20,0 °C mentre il valore confermato restava 21,0 °C alla revisione 2, e dopo
+«Verifica» sono comparsi «La modifica era già arrivata: confermata, senza applicarla due volte» e
+la revisione 3. Un `OK` avrebbe portato alla revisione 4, un conflitto avrebbe mostrato un altro
+messaggio.
+
+La prova ha trovato un solo difetto, di aspetto: nel selettore della modalità «Comfort» andava a
+capo. È corretto nello stesso commit che registra la prova.

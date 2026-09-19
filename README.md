@@ -5,10 +5,11 @@ gesto delle app con cui un installatore configura un'automazione, un regolatore 
 trovare il dispositivo, collegarsi, leggere e cambiare i parametri, e sapere con certezza se
 una modifica è arrivata.
 
-> **Lavori in corso.** Il progetto è la voce 3 del piano di sviluppo del portfolio. Oggi ci
-> sono il nucleo del protocollo in C, il protocollo lato app in Dart, il plugin Bluetooth per
-> Android (Kotlin, Pigeon e il C via JNI) e l'app Flutter, con i loro test, più il firmware per
-> ESP32-S3, che la CI compila. Arrivano la prova sull'hardware e il lato Swift.
+> **Stato.** Il progetto è la voce 3 del piano di sviluppo del portfolio. Ci sono il nucleo del
+> protocollo in C, il protocollo lato app in Dart, il plugin Bluetooth per Android (Kotlin,
+> Pigeon e il C via JNI), l'app Flutter e il firmware per ESP32-S3. La prova con la scheda vera e
+> un Galaxy S20 è superata ([esito](firmware/README.md#esito-19-settembre-2026-tutti-e-quattro-i-punti-superati)).
+> Arriva il lato Swift, per iOS e macOS.
 
 ```
 protocol/                          il contratto: specifica e vettori di prova, letti da C e da Dart
