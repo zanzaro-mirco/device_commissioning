@@ -68,6 +68,30 @@ jobs:
             -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.debug" build
             && grep -q ^CONFIG_DC_DEBUG_COMMANDS=y build-debug/sdkconfig
 
+      # I binari pronti da caricare con esptool, senza installare ESP-IDF:
+      # flasher_args.json dice a quale indirizzo va ciascun file.
+      - name: Binari del firmware da installare
+        uses: actions/upload-artifact@v7
+        with:
+          name: firmware
+          path: |
+            firmware/build/flasher_args.json
+            firmware/build/bootloader/bootloader.bin
+            firmware/build/partition_table/partition-table.bin
+            firmware/build/centralina.bin
+          if-no-files-found: error
+
+      - name: Binari del firmware di debug
+        uses: actions/upload-artifact@v7
+        with:
+          name: firmware-debug
+          path: |
+            firmware/build-debug/flasher_args.json
+            firmware/build-debug/bootloader/bootloader.bin
+            firmware/build-debug/partition_table/partition-table.bin
+            firmware/build-debug/centralina.bin
+          if-no-files-found: error
+
   # Il protocollo lato app: Dart puro, senza Flutter. Legge gli stessi vettori
   # del C, quindi gira dalla cartella del pacchetto con il repository intero.
   commissioning_protocol:
