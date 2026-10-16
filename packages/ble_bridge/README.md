@@ -8,7 +8,7 @@ di `commissioning_protocol`.
   rigenera con `dart run pigeon --input pigeons/ble_api.dart`.
 - La trama e il CRC sono il C di [`native/dc_core`](../../native/dc_core), lo stesso del
   firmware, chiamato via JNI.
-- Oggi solo Android. Il lato Swift (iOS e macOS) è la voce 5 del piano.
+- Oggi solo Android. Il lato Swift (iOS e macOS) non c'è ancora.
 
 Le scelte sono spiegate in [`ARCHITECTURE.md`](../../ARCHITECTURE.md) nella radice del
 repository.

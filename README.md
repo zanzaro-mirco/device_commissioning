@@ -5,11 +5,13 @@ gesto delle app con cui un installatore configura un'automazione, un regolatore 
 trovare il dispositivo, collegarsi, leggere e cambiare i parametri, e sapere con certezza se
 una modifica è arrivata.
 
-> **Stato.** Il progetto è la voce 3 del piano di sviluppo del portfolio. Ci sono il nucleo del
+È uno dei cinque progetti del mio portfolio: la scheda, insieme agli altri quattro, è su [zanzaro-mirco.github.io](https://zanzaro-mirco.github.io/progetti/device-commissioning/).
+
+> **Stato.** Ci sono il nucleo del
 > protocollo in C, il protocollo lato app in Dart, il plugin Bluetooth per Android (Kotlin,
 > Pigeon e il C via JNI), l'app Flutter e il firmware per ESP32-S3. La prova con la scheda vera e
 > un Galaxy S20 è superata ([esito](firmware/README.md#esito-19-settembre-2026-tutti-e-quattro-i-punti-superati)).
-> Arriva il lato Swift, per iOS e macOS.
+> Il lato Swift del plugin, per iOS e macOS, non c'è ancora.
 
 ```
 protocol/                          il contratto: specifica e vettori di prova, letti da C e da Dart

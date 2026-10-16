@@ -47,7 +47,7 @@ aggiornare l'app, e sarebbe falso.
 
 **Tutti i messaggi della versione 1 stanno in 20 byte**, cioè nella MTU minima del Bluetooth LE
 (23 byte meno 3 di intestazione ATT). Il protocollo funziona senza negoziare la MTU. La
-negoziazione serve solo all'aggiornamento del firmware (voce 6 del piano).
+negoziazione servirà solo all'aggiornamento del firmware via Bluetooth, che non c'è ancora.
 
 ## I messaggi
 
@@ -81,7 +81,7 @@ negoziazione serve solo all'aggiornamento del firmware (voce 6 del piano).
 
 ## Perché una revisione e non un identificativo di richiesta
 
-La prima versione del piano prevedeva un identificativo per richiesta, da ricordare sulla
+La prima stesura del protocollo prevedeva un identificativo per richiesta, da ricordare sulla
 centralina. Non basta, per due ragioni:
 1. i client sono più d'uno (il telefono e il Mac), e i loro identificativi non si possono
    ordinare fra loro;

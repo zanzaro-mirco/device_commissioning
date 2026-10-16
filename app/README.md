@@ -2,7 +2,7 @@
 
 L'app dell'installatore, in Flutter con Cubit: trova le centraline, si collega, mostra la
 temperatura e i parametri confermati, e scrive i parametri nuovi. Oggi gira su Android; il lato
-Swift del plugin, per iOS e macOS, è la voce 5 del piano.
+Swift del plugin, per iOS e macOS, non c'è ancora.
 
 ```
 lib/link/     DeviceLink: quello che l'app chiede al Bluetooth, e la versione sopra il plugin

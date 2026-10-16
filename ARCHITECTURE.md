@@ -1,8 +1,8 @@
 # Architettura e scelte di progetto
 
 Il documento cresce con il progetto. Per ora copre il protocollo, il nucleo in C, il pacchetto
-Dart, il plugin Bluetooth per Android, il firmware e l'app. Il lato Swift arriva con la voce 5
-del piano.
+Dart, il plugin Bluetooth per Android, il firmware e l'app. Il lato Swift, per iOS e macOS, non
+c'è ancora.
 
 ## Un solo codice per il filo, in C
 
@@ -183,7 +183,7 @@ un'euristica, ed è quella che indica la documentazione di Android.
 - **C via JNI:** un test strumentato legge `frames.vec` dagli asset (presi da
   `protocol/vectors`, non copiati) e lo esegue sulla libreria compilata per Android. Gira su
   emulatore in CI. Questo test non è stato falsificato: in locale non c'è un emulatore, e
-  una mutazione andrebbe provata su un ramo, che le regole del portfolio non lasciano aperto.
+  una mutazione andrebbe provata su un ramo dedicato, che non ho aperto.
   Le difese che controlla sono comunque falsificate nei test in C sul PC.
 - **Bluetooth vero:** con l'ESP32-S3 e il Galaxy S20, il 19 settembre 2026. I quattro punti
   del criterio di fatto sono superati; l'esito è in `firmware/README.md`.
@@ -339,5 +339,5 @@ Ogni difesa è stata tolta a mano per vedere fallire i suoi test.
 - **Un solo parametro composto** (setpoint e modo): basta per mostrare letture, scritture
   condizionate e conflitti, e non serve un modello di parametri generico.
 - **Il firmware è il minimo.** La temperatura è simulata, c'è una connessione alla volta, non
-  c'è associazione né cifratura (arrivano con la voce 8 del piano) e non c'è aggiornamento del
-  firmware via Bluetooth (voce 6).
+  c'è associazione né cifratura, e non c'è aggiornamento del
+  firmware via Bluetooth.
