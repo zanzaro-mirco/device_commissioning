@@ -64,7 +64,7 @@ request SET_PARAMS expected_revision=0 setpoint=180 mode=1 -> SET_RESULT status=
 request GET_STATE -> STATE status=OK revision=1 setpoint=215 mode=1
 end
 
-# Il criterio 4 della voce 3: applica, salva e riavvia senza rispondere.
+# Il quarto punto della prova con l'hardware: applica, salva e riavvia senza rispondere.
 # Il nuovo tentativo dopo il riavvio scopre che la modifica c'era.
 scenario name=apply_then_reboot_then_retry
 factory
